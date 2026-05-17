@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kalorijski dnevnik</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f2;color:#1a1a1a;padding:1rem;max-width:500px;margin:0 auto;}
+h1{font-size:17px;font-weight:500;margin-bottom:.8rem;text-align:center;}
+.save-bar{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.save-btn{padding:7px 16px;font-size:13px;border:1px solid #ccc;border-radius:8px;background:#fff;color:#1a1a1a;cursor:pointer;font-weight:500;}
+.save-btn.primary{background:#1a1a1a;color:#fff;border-color:#1a1a1a;}
+.save-btn.primary:active{background:#333;}
+.save-btn:disabled{opacity:.4;cursor:default;}
+.save-status{font-size:12px;color:#888;width:100%;text-align:center;}
+.week-nav{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.nav-btn{padding:8px 14px;font-size:15px;border:1px solid #ccc;border-radius:8px;background:#fff;color:#1a1a1a;cursor:pointer;flex-shrink:0;}
+.nav-btn:active{background:#eee;}
+.week-select{font-size:13px;padding:6px 8px;border:1px solid #ccc;border-radius:8px;background:#fff;color:#1a1a1a;flex:1;min-width:0;}
+.week-lbl{font-size:12px;color:#888;margin-bottom:10px;text-align:center;}
+.hint{font-size:11px;color:#bbb;margin-bottom:10px;text-align:center;}
+.days-scroll{display:flex;overflow-x:auto;gap:10px;padding-bottom:10px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;}
+.days-scroll::-webkit-scrollbar{height:3px;}
+.days-scroll::-webkit-scrollbar-thumb{background:#ccc;border-radius:3px;}
+.day-card{min-width:210px;flex-shrink:0;scroll-snap-align:start;background:#fff;border:1px solid #e0e0d8;border-radius:14px;padding:14px 14px 12px;}
+.day-name{font-size:12px;font-weight:500;color:#888;text-align:center;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;}
+.meal-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;gap:8px;}
+.meal-label{font-size:13px;color:#555;flex:1;}
+.meal-input{width:70px;font-size:13px;padding:6px 8px;border:1px solid #e0e0d8;border-radius:7px;background:#f9f9f7;color:#1a1a1a;text-align:right;outline:none;-moz-appearance:textfield;}
+.meal-input::-webkit-inner-spin-button,.meal-input::-webkit-outer-spin-button{-webkit-appearance:none;}
+.meal-input:focus{border-color:#aaa;background:#f0f5ff;}
+.coffee-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;}
+.coffee-ctrl{display:flex;align-items:center;gap:7px;}
+.cnt-btn{width:28px;height:28px;border:1px solid #ddd;border-radius:7px;background:#f5f5f2;color:#1a1a1a;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;-webkit-tap-highlight-color:transparent;}
+.cnt-btn:active{background:#e8e8e4;}
+.cc-n{font-size:15px;font-weight:500;min-width:18px;text-align:center;}
+.divider{height:1px;background:#e8e8e4;margin:8px 0;}
+.tot-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;gap:8px;}
+.tot-label{font-size:12px;color:#888;}
+.tot-input{width:80px;font-size:15px;font-weight:500;padding:6px 8px;border:1px solid #e0e0d8;border-radius:7px;background:#f9f9f7;color:#1a1a1a;text-align:right;outline:none;-moz-appearance:textfield;}
+.tot-input::-webkit-inner-spin-button,.tot-input::-webkit-outer-spin-button{-webkit-appearance:none;}
+.tot-input:focus{border-color:#aaa;background:#f0f5ff;}
+.tot-input.overridden{color:#185FA5;border-color:#85B7EB;}
+.def-row{display:flex;align-items:center;justify-content:space-between;}
+.def-label{font-size:12px;color:#aaa;}
+.def-val{font-size:13px;font-weight:500;}
+.pos{color:#3B6D11;}
+.neg{color:#A32D2D;}
+.dz{color:#aaa;}
+.week-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px;margin-bottom:12px;}
+.metric{background:#fff;border:1px solid #e0e0d8;border-radius:10px;padding:10px 8px;text-align:center;}
+.ml{font-size:10px;color:#888;margin-bottom:3px;line-height:1.3;}
+.mv{font-size:15px;font-weight:500;}
+.cum-card{background:#fff;border:1px solid #e0e0d8;border-radius:12px;padding:.9rem 1rem;overflow-x:auto;margin-top:4px;}
+.ctitle{font-size:11px;font-weight:500;color:#888;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;}
+.ctbl{width:100%;font-size:12px;border-collapse:collapse;min-width:340px;}
+.ctbl th{text-align:left;color:#888;font-weight:500;padding:3px 5px;border-bottom:1px solid #eee;}
+.ctbl td{padding:4px 5px;border-bottom:1px solid #f0f0ee;color:#1a1a1a;}
+.ctbl tr.cur td{background:#e8f0fb;color:#0C447C;}
+.ctbl tr:last-child td{border-bottom:none;}
+.ctbl .nr{text-align:right;}
+.loading{text-align:center;padding:2rem;color:#888;font-size:14px;}
+</style>
+</head>
+<body>
+<h1>Kalorijski dnevnik</h1>
+
+<div class="save-bar">
+  <button class="save-btn primary" id="btnSave" onclick="saveData()">Shrani v oblak</button>
+  <button class="save-btn" id="btnLoad" onclick="loadData()">Naloži iz oblaka</button>
+  <span class="save-status" id="ss"></span>
+</div>
+
+<div class="week-nav">
+  <button class="nav-btn" onclick="chgW(-1)">←</button>
+  <select class="week-select" id="wsel" onchange="selW(this.value)"></select>
+  <button class="nav-btn" onclick="chgW(1)">→</button>
+</div>
+<div class="week-lbl" id="wlbl"></div>
+<p class="hint">Podrsaj levo / desno za dneve</p>
+
+<div class="days-scroll" id="daysScroll"><div class="loading">Nalagam podatke...</div></div>
+<div class="week-summary" id="weekSum"></div>
+<div class="cum-card"><div class="ctitle">Skupni pregled — 16 tednov</div><div id="ctbl"></div></div>
+
+<script>
+const TDEE=2346,KCF=75,KG=7700,NW=16,ND=7;
+const DN=['Ponedeljek','Torek','Sreda','Četrtek','Petek','Sobota','Nedelja'];
+const MEALS=[{id:'b',lbl:'Zajtrk'},{id:'l',lbl:'Kosilo'},{id:'d',lbl:'Večerja'},{id:'s',lbl:'Malica'}];
+const START=new Date(2026,4,11);
+const API='https://script.google.com/macros/s/AKfycbxlDLfZuLR6T4cgPLz2vF3wwL9p7UI43ig2jHLL4n1QLi9uqxhVv2wQjoWt5U7kMr0/exec';
+
+function wkStart(w){const d=new Date(START);d.setDate(d.getDate()+w*7);return d;}
+function fd(d){return d.toLocaleDateString('sl-SI',{day:'numeric',month:'numeric'});}
+function wkLbl(w){const s=wkStart(w);const e=new Date(s);e.setDate(e.getDate()+6);return `Teden ${w+1}  •  ${fd(s)} – ${fd(e)}`;}
+function emptyWk(){return{meals:Object.fromEntries(MEALS.map(m=>[m.id,Array(ND).fill(0)])),coffee:Array(ND).fill(0),override:Array(ND).fill(null)};}
+
+let S={w:0,data:Array.from({length:NW},emptyWk)};
+
+function mealSum(w,d){return MEALS.reduce((s,m)=>s+(S.data[w].meals[m.id][d]||0),0)+(S.data[w].coffee[d]*KCF);}
+function dayVal(w,d){return S.data[w].override[d]!==null?S.data[w].override[d]:mealSum(w,d);}
+function dayLogged(w,d){return dayVal(w,d)>0;}
+function wkTot(w){return Array.from({length:ND},(_,d)=>dayVal(w,d)).reduce((a,b)=>a+b,0);}
+function wkLoggedDays(w){return Array.from({length:ND},(_,d)=>dayLogged(w,d)?1:0).reduce((a,b)=>a+b,0);}
+function wkDef(w){let def=0;for(let d=0;d<ND;d++){if(dayLogged(w,d))def+=TDEE-dayVal(w,d);}return def;}
+function dc(v){return v>=0?'pos':'neg';}
+function fmtDef(v){return(v>=0?'−':'+')+ Math.abs(Math.round(v))+' kcal';}
+
+function setButtons(disabled){
+  document.getElementById('btnSave').disabled=disabled;
+  document.getElementById('btnLoad').disabled=disabled;
+}
+
+async function saveData(){
+  setButtons(true);
+  status('Shranjujem...');
+  try{
+    const payload=JSON.stringify({v:1,data:S.data});
+    await fetch(API,{method:'POST',body:payload,headers:{'Content-Type':'text/plain'}});
+    status('Shranjeno v oblak.');
+  }catch(e){
+    status('Napaka pri shranjevanju. Preveri internet.');
+  }
+  setButtons(false);
+}
+
+async function loadData(){
+  setButtons(true);
+  status('Nalagam...');
+  try{
+    const res=await fetch(API+'?t='+Date.now());
+    const text=await res.text();
+    if(!text||text==='[]'){status('Ni shranjenih podatkov.');setButtons(false);return;}
+    const parsed=JSON.parse(text);
+    const raw=parsed.v===1?parsed.data:parsed;
+    S.data=Array.from({length:NW},(_,i)=>raw[i]?{
+      meals:raw[i].meals||emptyWk().meals,
+      coffee:raw[i].coffee||Array(ND).fill(0),
+      override:raw[i].override||Array(ND).fill(null)
+    }:emptyWk());
+    render();
+    status('Naloženo iz oblaka.');
+  }catch(e){
+    status('Napaka pri nalaganju. Preveri internet.');
+  }
+  setButtons(false);
+}
+
+function status(t){const el=document.getElementById('ss');el.textContent=t;setTimeout(()=>el.textContent='',4000);}
+
+function buildSel(){
+  document.getElementById('wsel').innerHTML=Array.from({length:NW},(_,i)=>`<option value="${i}">${wkLbl(i)}</option>`).join('');
+  document.getElementById('wsel').value=S.w;
+}
+function selW(v){S.w=parseInt(v);render();}
+function chgW(n){S.w=Math.max(0,Math.min(NW-1,S.w+n));document.getElementById('wsel').value=S.w;render();}
+
+function buildDays(){
+  const w=S.w,wd=S.data[w];
+  let html='';
+  for(let d=0;d<ND;d++){
+    const ov=wd.override[d];
+    const dispTot=ov!==null?ov:mealSum(w,d);
+    const dv=dayVal(w,d);
+    const logged=dv>0;
+    const def=TDEE-dv;
+    html+=`<div class="day-card"><div class="day-name">${DN[d]}</div>`;
+    MEALS.forEach(m=>{
+      html+=`<div class="meal-row"><span class="meal-label">${m.lbl}</span>
+        <input class="meal-input" type="number" min="0" step="1" inputmode="numeric" value="${wd.meals[m.id][d]||''}" placeholder="0" data-meal="${m.id}" data-day="${d}"/></div>`;
+    });
+    html+=`<div class="coffee-row"><span class="meal-label">Kava</span>
+      <div class="coffee-ctrl">
+        <button class="cnt-btn" data-day="${d}" data-dir="-1">−</button>
+        <span class="cc-n" id="cc${d}">${wd.coffee[d]}</span>
+        <button class="cnt-btn" data-day="${d}" data-dir="1">+</button>
+      </div></div>
+    <div class="divider"></div>
+    <div class="tot-row"><span class="tot-label">Skupaj (kcal)</span>
+      <input class="tot-input${ov!==null?' overridden':''}" type="number" min="0" step="1" inputmode="numeric" id="tot${d}" value="${dispTot||''}" placeholder="${mealSum(w,d)||0}" data-day="${d}"/></div>
+    <div class="def-row"><span class="def-label">Prihranjeno</span>
+      <span class="def-val ${logged?dc(def):'dz'}" id="def${d}">${logged?fmtDef(-def):'—'}</span></div>
+    </div>`;
+  }
+  document.getElementById('daysScroll').innerHTML=html;
+
+  document.querySelectorAll('input[data-meal]').forEach(inp=>{
+    inp.addEventListener('input',function(){
+      S.data[S.w].meals[this.dataset.meal][parseInt(this.dataset.day)]=parseFloat(this.value)||0;
+      syncAuto(parseInt(this.dataset.day));updateTotals();
+    });
+  });
+  document.querySelectorAll('.cnt-btn').forEach(btn=>{
+    btn.addEventListener('click',function(){
+      const d=parseInt(this.dataset.day),dir=parseInt(this.dataset.dir);
+      S.data[S.w].coffee[d]=Math.max(0,S.data[S.w].coffee[d]+dir);
+      document.getElementById('cc'+d).textContent=S.data[S.w].coffee[d];
+      syncAuto(d);updateTotals();
+    });
+  });
+  for(let d=0;d<ND;d++){
+    (function(day){
+      const inp=document.getElementById('tot'+day);
+      inp.addEventListener('input',function(){
+        const raw=parseFloat(this.value);
+        if(isNaN(raw)||this.value===''){
+          S.data[S.w].override[day]=null;this.classList.remove('overridden');
+          const a=mealSum(S.w,day);this.value=a||'';this.placeholder=a||0;
+        }else{S.data[S.w].override[day]=raw;this.classList.add('overridden');}
+        updateTotals();
+      });
+      inp.addEventListener('dblclick',function(){
+        S.data[S.w].override[day]=null;this.classList.remove('overridden');
+        const a=mealSum(S.w,day);this.value=a||'';this.placeholder=a||0;updateTotals();
+      });
+    })(d);
+  }
+}
+
+function syncAuto(d){
+  if(S.data[S.w].override[d]===null){
+    const inp=document.getElementById('tot'+d);
+    if(inp){const a=mealSum(S.w,d);inp.value=a||'';inp.placeholder=a||0;inp.classList.remove('overridden');}
+  }
+}
+
+function updateTotals(){
+  const w=S.w;
+  for(let d=0;d<ND;d++){
+    if(S.data[w].override[d]===null){
+      const inp=document.getElementById('tot'+d);
+      if(inp){const a=mealSum(w,d);inp.value=a||'';inp.placeholder=a||0;}
+    }
+    const dv=dayVal(w,d);
+    const logged=dv>0;
+    const def=TDEE-dv;
+    const el=document.getElementById('def'+d);
+    if(el){el.textContent=logged?fmtDef(-def):'—';el.className='def-val '+(logged?dc(def):'dz');}
+  }
+  renderWeekSum();renderCum();
+}
+
+function renderWeekSum(){
+  const w=S.w,wdef=wkDef(w),toG=KG-wdef,kg=(wdef/KG).toFixed(2),nlog=wkLoggedDays(w);
+  const defDisp=nlog>0?Math.round(wdef)+' kcal':'—';
+  const toGDisp=nlog>0?Math.round(toG)+' kcal':'—';
+  const kgDisp=nlog>0?kg+' kg':'—';
+  const wc=nlog>0?(wdef>=0?'pos':'neg'):'';
+  const tgc=nlog>0?(toG<=0?'pos':'neg'):'';
+  const kgc=nlog>0?(parseFloat(kg)>=0?'pos':'neg'):'';
+  document.getElementById('weekSum').innerHTML=`
+    <div class="metric"><div class="ml">Deficit (${nlog} dni)</div><div class="mv ${wc}">${defDisp}</div></div>
+    <div class="metric"><div class="ml">Do 1 kg</div><div class="mv ${tgc}">${toGDisp}</div></div>
+    <div class="metric"><div class="ml">Ocena izgube</div><div class="mv ${kgc}">${kgDisp}</div></div>`;
+}
+
+function renderCum(){
+  let cum=0,rows='';
+  for(let w=0;w<NW;w++){
+    const wdef=wkDef(w),nlog=wkLoggedDays(w);
+    if(nlog>0)cum+=wdef;
+    const kg=(cum/KG).toFixed(2);
+    const s=wkStart(w);const e=new Date(s);e.setDate(e.getDate()+6);
+    const defDisp=nlog>0?Math.round(wdef):'—';
+    const defCls=nlog>0?(wdef>=0?'pos':'neg'):'';
+    const cumDisp=cum!==0?Math.round(cum):'—';
+    const kgDisp=cum!==0?kg:'—';
+    rows+=`<tr class="${w===S.w?'cur':''}">
+      <td>${w+1}</td><td style="font-size:11px;">${fd(s)}–${fd(e)}</td>
+      <td class="nr">${nlog>0?wkTot(w):'—'}</td>
+      <td class="nr ${defCls}">${defDisp}</td>
+      <td class="nr ${cum>=0?'pos':'neg'}">${cumDisp}</td>
+      <td class="nr ${parseFloat(kg)>=0?'pos':'neg'}">${kgDisp}</td></tr>`;
+  }
+  document.getElementById('ctbl').innerHTML=`<table class="ctbl">
+    <thead><tr><th>T</th><th>Datumi</th><th class="nr">Vnos</th><th class="nr">Deficit</th><th class="nr">Kumulat.</th><th class="nr">Kg</th></tr></thead>
+    <tbody>${rows}</tbody></table>`;
+}
+
+function render(){
+  document.getElementById('wlbl').textContent=wkLbl(S.w);
+  document.getElementById('wsel').value=S.w;
+  buildDays();renderWeekSum();renderCum();
+}
+
+buildSel();
+render();
+loadData();
+</script>
+</body>
+</html>
